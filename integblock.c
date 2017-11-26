@@ -32,33 +32,15 @@ int main(int argc, char *argv[])     //usb block main function
   int choice;
   printf("Please input choice number\n");
   printf("1. Block USB ports\n");
-  printf("2. Temporarily unblock USB ports\n");
-  printf("3. Unblock USB ports\n");
+  printf("2. Unblock USB ports\n");
   scanf("%d", &choice);
-  if(choice==3)
+  if(choice==2)
   {
 	unblock();
   }
-  else if(choice==2)
-  {
-    FILE *fp;
-    do_setuid();
-    fp= fopen(fname, "r+"); // opening in r+ mode
-    undo_setuid();
-    if (fp)
-    {
-      fprintf(fp, "%s", allow_rule); // for modifications in the rules file
-      if (ftruncate(fileno(fp), strlen(allow_rule)) != 0) 
-      {
-	return 27;
-      }
-      fclose(fp);
-      printf("Temp allow rule added, sleeping\n");
-      sleep(wait);
-    }
-  }
   else 
   {
+      
     // restore the udev rule always
     if (signal(SIGTERM, sig_handler) == SIG_ERR) 
     {
@@ -73,9 +55,23 @@ int main(int argc, char *argv[])     //usb block main function
 	return 88;
     }
     atexit(make_file); //atexit helps us register a function that can be called at process termination.
-  }
+      
+      FILE *fp;
+      do_setuid();
+      fp= fopen(fname, "r+"); // opening in r+ mode
+      undo_setuid();
+      if (fp)
+      {
+      fprintf(fp, "%s", allow_rule); // for modifications in the rules file
+      if (ftruncate(fileno(fp), strlen(allow_rule)) != 0) 
+      {
+	return 27;
+      }
+      fclose(fp);
+      printf("Temp allow rule added, sleeping\n");
+      sleep(wait);
 
-   
+  }
   return 0;
 }
 
@@ -113,7 +109,7 @@ void make_file()
   }
   else
   {
-    fprintf(stderr, "ERROR: could not make paranoid udev rules\n");
+    fprintf(stderr, "ERROR: could not make the udev rules\n");
   }
   undo_setuid();
 }

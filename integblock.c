@@ -71,8 +71,9 @@ int main(int argc, char *argv[])     //usb block main function
       printf("Temp allow rule added, sleeping\n");
       sleep(wait);
 
-  }
+      }
   return 0;
+}
 }
 
 void unblock()

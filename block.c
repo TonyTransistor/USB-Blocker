@@ -1,3 +1,4 @@
+//jai maa kali 
 #include <stdio.h>  /*required for proper input output functions*/
 #include <string.h> /*contains the functions required for string manipulation and other string related functions*/
 #include <stdlib.h> /*gives the user access to several other predefined library functions.*/

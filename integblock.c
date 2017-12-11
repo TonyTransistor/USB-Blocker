@@ -6,96 +6,100 @@
 
 #define  no_usb "# this rule does not allow any new usb devices, use script to disable\nACTION==\"add\", DRIVERS==\"usb\",  ATTR{authorized}=\"0\"\n"
 #define fname "/etc/udev/rules.d/11-to_rule_all.rules"
-#define wait 20           // wait time for temporary unblock
+#define wait 20 // wait 20 seconds for new usb device
 
-static unsigned int euid, ruid;		//program effective user ID and the running user ID
+static unsigned int euid, ruid;        //program effective user ID and the running user ID
 void do_setuid (void);
 void undo_setuid(void);
 void make_file();
 void sig_handler(int signo);
-void unblock();
 
-int main(int argc, char *argv[])     //usb block main function
+int main(int argc, char *argv[])
 {
   char * allow_rule;
   ruid = getuid();
   euid = geteuid();
+  int choice;
 
-  
   // rule to allow usb drives for a predefined amount of time
-  char rule2[] = 
+  char rule2[] =
     "#tmp allows all USB devices\n"
     "ACTION==\"add\", DRIVERS==\"usb\"\n";
 
-  allow_rule = rule2;
-    
-  int choice;
-  printf("Please input choice number\n");
-  printf("1. Block USB ports\n");
-  printf("2. Unblock USB ports\n");
-  scanf("%d", &choice);
-  if(choice==2)
-  {
-	unblock();
-  }
-  else 
-  {
-      
-    // restore the udev rule always
-    if (signal(SIGTERM, sig_handler) == SIG_ERR) 
-    {
-	return 88;         // mount error signal
-    }
-    if (signal(SIGINT, sig_handler) == SIG_ERR) 
-    {
-	return 88;
-    }
-    if (signal(SIGUSR1, sig_handler) == SIG_ERR) 
-    {
-	return 88;
-    }
-    atexit(make_file); //atexit helps us register a function that can be called at process termination.
-      
-      FILE *fp;
-      do_setuid();
-      fp= fopen(fname, "r+"); // opening in r+ mode
-      undo_setuid();
-      if (fp)
-      {
-      fprintf(fp, "%s", allow_rule); // for modifications in the rules file
-      if (ftruncate(fileno(fp), strlen(allow_rule)) != 0) 
-      {
-	return 27;
-      }
-      fclose(fp);
-      printf("Temp allow rule added, sleeping\n");
-      sleep(wait);
+  allow_rule=rule2;
+	printf("1.\tBlock all USB Ports\n2.\tTemporarily Unblock all USB Ports\n3.\tPermanently Unblock all USB Ports\n");
+	scanf("%d",&choice);
+	if(choice==3)
+	{
+		FILE *fp;
+  		do_setuid();
+		fp= fopen(fname, "r+"); // opening in r+ mode
+		undo_setuid();
 
-      }
+		if (fp)
+  		{
+     			fprintf(fp, "%s", allow_rule); // for modifications in the rules file
+     			if (ftruncate(fileno(fp), strlen(allow_rule)) != 0)
+     			return 27;
+     			fclose(fp);
+     			printf("Unblocked USB Ports.\n");
+     			system("rm -rf /etc/udev/rules.d/11-to_rule_all.rules");
+  		}
+		else 
+			printf("USB Ports are not blocked.\n");
+	}
+	else if(choice==2)
+	{
+		FILE *fp;
+  		do_setuid();
+		fp= fopen(fname, "r+"); // opening in r+ mode
+		undo_setuid();
+		if (fp)
+  		{
+     			fprintf(fp, "%s", allow_rule); // for modifications in the rules file
+     			if (ftruncate(fileno(fp), strlen(allow_rule)) != 0)
+     			return 27;
+     			fclose(fp);     			
+			printf("USB Ports Temporarily Unblocked for 20 seconds.\n");
+			system("rm -rf /etc/udev/rules.d/11-to_rule_all.rules");
+			sleep(wait);
+  			printf("Blocking again.\n");
+  			if (signal(SIGTERM, sig_handler) == SIG_ERR)
+  			return 88;         // mount error signal
+			if (signal(SIGINT, sig_handler) == SIG_ERR)
+			return 88;
+			if (signal(SIGUSR1, sig_handler) == SIG_ERR)
+			return 88;
+			atexit(make_file); 
+		}
+		else 
+			printf("USB Ports are not blocked.\n");
+
+	}
+	else if(choice==1)
+	{
+			if (signal(SIGTERM, sig_handler) == SIG_ERR)
+  			return 88;         // mount error signal
+			if (signal(SIGINT, sig_handler) == SIG_ERR)
+			return 88;
+			if (signal(SIGUSR1, sig_handler) == SIG_ERR)
+			return 88;
+			atexit(make_file); 
+	}
+	else 
+		printf("Run program again with correct input.\n");
   return 0;
-}
-}
-
-void unblock()
-{
-  system("rm -rf /etc/udev/rules.d/11-to_rule_all.rules");
 }
 
 void sig_handler(int signo)
 {
   if (signo == SIGUSR1) 
-  {
-	printf("received SIGUSR1\n");
-  }
+  printf("received SIGUSR1\n");
   else if (signo == SIGTERM) 
-  {
-	printf("received SIGSTERM\n");
-  }
+  printf("received SIGSTERM\n");
   else if (signo == SIGINT) 
-  {
-	printf("\nreceived SIGINT\n");
-  }
-  make_file();			//calling makefile function to create file
+  printf("\nreceived SIGINT\n");
+  make_file();            //calling makefile function to create file
 }
 
 void make_file()
@@ -110,7 +114,7 @@ void make_file()
   }
   else
   {
-    fprintf(stderr, "ERROR: could not make the udev rules\n");
+    fprintf(stderr, "ERROR: could not make paranoid udev rules\n");
   }
   undo_setuid();
 }
@@ -130,7 +134,7 @@ void do_setuid (void)
    }
 }
 
-void undo_setuid(void) 
+void undo_setuid(void)
 {
    int status;
    #ifdef _POSIX_SAVED_IDS
@@ -144,7 +148,3 @@ void undo_setuid(void)
      exit(status);
    }
 }
-
-
-
-
